@@ -6,12 +6,11 @@ using System.Text;
 
 public class NodoAritmetico
 {
-    public string Operador;  // Puede ser un operador aritmético ('+', '-', '*', '/', '%')
-    public double? Operando; // Puede ser un número (operando hoja)
+    public string Operador;
+    public double? Operando;
     public NodoAritmetico Izquierda;
     public NodoAritmetico Derecha;
 
-    // Constructor para nodos operadores (internos)
     public NodoAritmetico(string operador)
     {
         Operador = operador;
@@ -20,7 +19,6 @@ public class NodoAritmetico
         Derecha = null;
     }
 
-    // Constructor para nodos hoja (valores numéricos)
     public NodoAritmetico(double operando)
     {
         Operador = null;
@@ -29,15 +27,13 @@ public class NodoAritmetico
         Derecha = null;
     }
 
-    // Método para evaluar la expresión
     public double Evaluar()
     {
-        if (Operando.HasValue)  // Si es una hoja, devolver su valor
+        if (Operando.HasValue)
         {
             return Operando.Value;
         }
 
-        // Evaluar según el operador
         switch (Operador)
         {
             case "+":
@@ -49,7 +45,7 @@ public class NodoAritmetico
             case "/":
                 return Izquierda.Evaluar() / Derecha.Evaluar();
             case "%":
-                return Izquierda.Evaluar() * 0.01;  // Calculamos el porcentaje
+                return Izquierda.Evaluar() * 0.01;
             default:
                 throw new InvalidOperationException("Operador no reconocido");
         }
@@ -76,12 +72,10 @@ public class Server
             TcpClient cliente = servidor.AcceptTcpClient();
             Console.WriteLine("Cliente conectado.");
 
-            // Obtener el stream para enviar y recibir datos
             NetworkStream stream = cliente.GetStream();
             byte[] buffer = new byte[1024];
             int bytesLeidos;
 
-            // Leer la expresión infija del cliente
             bytesLeidos = stream.Read(buffer, 0, buffer.Length);
             string expresionInfija = Encoding.ASCII.GetString(buffer, 0, bytesLeidos);
 
@@ -89,66 +83,70 @@ public class Server
 
             try
             {
-                // Convertir la expresión infija a postfija
                 string postfija = ConvertirPostfija(expresionInfija);
                 Console.WriteLine("Notación Postfija: " + postfija);
 
-                // Construir el árbol de expresión desde la notación postfija
                 NodoAritmetico arbol = ConstruirArbolPostfijo(postfija);
 
-                // Evaluar el árbol de expresión
                 double resultado = arbol.Evaluar();
                 Console.WriteLine("Resultado de la expresión: " + resultado);
 
-                // Enviar solo el resultado al cliente
                 byte[] respuesta = Encoding.ASCII.GetBytes(resultado.ToString());
                 stream.Write(respuesta, 0, respuesta.Length);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message);
-                // En caso de error, enviar solo "Error"
                 byte[] respuesta = Encoding.ASCII.GetBytes("Error");
                 stream.Write(respuesta, 0, respuesta.Length);
             }
 
-            // Cerrar la conexión con el cliente
             cliente.Close();
         }
     }
 
-    // Función para convertir una expresión infija a postfija (notación polaca inversa)
     private string ConvertirPostfija(string infija)
     {
-        Stack<char> pila = new Stack<char>();
         List<string> resultado = new List<string>();
-        for (int i = 0; i < infija.Length; i++)
-        {
-            char token = infija[i];
-
-            if (char.IsDigit(token))  // Si es un operando
-            {
-                string numero = ProcesarNumeroRecursivo(infija, i, out int nuevoIndice);
-                i = nuevoIndice;
-                resultado.Add(numero);
-            }
-            else if (token == '+' || token == '-' || token == '*' || token == '/' || token == '%')
-            {
-                ProcesarOperadorRecursivo(pila, resultado, token);
-                pila.Push(token);
-            }
-            else if (token == '(')
-            {
-                pila.Push(token);
-            }
-            else if (token == ')')
-            {
-                ProcesarCierreParentesisRecursivo(pila, resultado);
-            }
-        }
-
+        Stack<char> pila = new Stack<char>();
+        ProcesarInfijaRecursivo(infija, 0, pila, resultado);
         ProcesarRestantesRecursivo(pila, resultado);
         return string.Join(" ", resultado);
+    }
+
+    private void ProcesarInfijaRecursivo(string infija, int indice, Stack<char> pila, List<string> resultado)
+    {
+        if (indice >= infija.Length)
+            return;
+
+        char token = infija[indice];
+
+        if (char.IsDigit(token))
+        {
+            string numero = ProcesarNumeroRecursivo(infija, indice, out int nuevoIndice);
+            resultado.Add(numero);
+            ProcesarInfijaRecursivo(infija, nuevoIndice + 1, pila, resultado);
+        }
+        else if (token == '+' || token == '-' || token == '*' || token == '/' || token == '%')
+        {
+            ProcesarOperadorRecursivo(pila, resultado, token);
+            pila.Push(token);
+            ProcesarInfijaRecursivo(infija, indice + 1, pila, resultado);
+        }
+        else if (token == '(')
+        {
+            pila.Push(token);
+            ProcesarInfijaRecursivo(infija, indice + 1, pila, resultado);
+        }
+        else if (token == ')')
+        {
+            ProcesarCierreParentesisRecursivo(pila, resultado);
+            ProcesarInfijaRecursivo(infija, indice + 1, pila, resultado);
+        }
+        else
+        {
+            ProcesarInfijaRecursivo(infija, indice + 1, pila, resultado);
+        }
     }
 
     private void ProcesarOperadorRecursivo(Stack<char> pila, List<string> resultado, char token)
@@ -207,7 +205,6 @@ public class Server
         return infija[indice] + ProcesarNumeroRecursivo(infija, indice + 1, out nuevoIndice);
     }
 
-    // Función para obtener la precedencia de los operadores
     private int Precedencia(char operador)
     {
         if (operador == '+' || operador == '-')
@@ -215,11 +212,10 @@ public class Server
         if (operador == '*' || operador == '/')
             return 2;
         if (operador == '%')
-            return 2;  // El porcentaje tiene la misma precedencia que la multiplicación y división
+            return 3;
         return 0;
     }
 
-    // Función recursiva para construir un árbol de expresión desde una notación postfija
     private NodoAritmetico ConstruirArbolPostfijo(string postfija)
     {
         string[] tokens = postfija.Split(' ');
@@ -236,7 +232,7 @@ public class Server
         }
 
         string token = tokens[indice];
-        if (double.TryParse(token, out double num))  // Si es un número, creamos un nodo hoja
+        if (double.TryParse(token, out double num))
         {
             pila.Push(new NodoAritmetico(num));
         }
