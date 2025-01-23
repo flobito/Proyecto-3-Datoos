@@ -30,7 +30,7 @@ namespace Algebra
         private Button newCalcButton;
         private Button viewLogButton;  // Nuevo botón para ver el registro
 
-        public static string CsvPath = "registro.csv"; // Cambio a público
+        public static string CsvPath = "registro.csv"; 
 
         public MainForma()
         {
