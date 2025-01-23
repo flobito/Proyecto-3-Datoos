@@ -21,14 +21,18 @@ namespace Algebra
         private Button sendButton;
         private Label resultLabel;
 
+        private TextBox logicInputTextBox;
+        private Button logicSendButton;
+        private Label logicResultLabel;
+
         public MainForma()
         {
             // Configuración básica de la ventana
             this.Text = "Calculadora";
             this.Width = 400;
-            this.Height = 200;
+            this.Height = 300;
 
-            // Campo de texto para ingresar la expresión
+            // Campo de texto para ingresar la expresión matemática
             inputTextBox = new TextBox
             {
                 Location = new System.Drawing.Point(20, 20),
@@ -36,7 +40,7 @@ namespace Algebra
             };
             this.Controls.Add(inputTextBox);
 
-            // Botón para enviar la expresión
+            // Botón para enviar la expresión matemática
             sendButton = new Button
             {
                 Text = "Calc",
@@ -46,7 +50,7 @@ namespace Algebra
             sendButton.Click += SendButton_Click;
             this.Controls.Add(sendButton);
 
-            // Etiqueta para mostrar el resultado
+            // Etiqueta para mostrar el resultado matemático
             resultLabel = new Label
             {
                 Text = "Resultado: ",
@@ -54,13 +58,49 @@ namespace Algebra
                 AutoSize = true
             };
             this.Controls.Add(resultLabel);
+
+            // Campo de texto para ingresar la expresión lógica
+            logicInputTextBox = new TextBox
+            {
+                Location = new System.Drawing.Point(20, 120),
+                Width = 250
+            };
+            this.Controls.Add(logicInputTextBox);
+
+            // Botón para enviar la expresión lógica
+            logicSendButton = new Button
+            {
+                Text = "Logic",
+                Location = new System.Drawing.Point(280, 118),
+                Width = 80
+            };
+            logicSendButton.Click += LogicSendButton_Click;
+            this.Controls.Add(logicSendButton);
+
+            // Etiqueta para mostrar el resultado lógico
+            logicResultLabel = new Label
+            {
+                Text = "Resultado lógico: ",
+                Location = new System.Drawing.Point(20, 160),
+                AutoSize = true
+            };
+            this.Controls.Add(logicResultLabel);
         }
 
         private void SendButton_Click(object sender, EventArgs e)
         {
+            SendExpression(inputTextBox.Text, resultLabel);
+        }
+
+        private void LogicSendButton_Click(object sender, EventArgs e)
+        {
+            SendExpression(logicInputTextBox.Text, logicResultLabel);
+        }
+
+        private void SendExpression(string expression, Label resultLabel)
+        {
             string serverIp = "127.0.0.1"; // Dirección IP del servidor
             int port = 12345; // Puerto del servidor
-            string expression = inputTextBox.Text;
 
             try
             {
@@ -83,7 +123,7 @@ namespace Algebra
                 // Cerrar la conexión
                 client.Close();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Mostrar errores en la etiqueta
                 resultLabel.Text = "No se pudo encontrar el servidor";
